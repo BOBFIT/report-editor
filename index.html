@@ -234,7 +234,7 @@
     .contact {
       justify-self: end;
       color: #59616a;
-      font: 500 var(--fs-contact)/1.45 "Helvetica Neue", Arial, sans-serif;
+      font: 400 var(--fs-contact)/1.45 "Helvetica Neue", Arial, sans-serif;
       text-align: left;
       min-width: 210px;
     }
@@ -328,7 +328,7 @@
       min-height: 32px;
       padding: 5px 10px;
       color: #22272d;
-      font: 500 var(--fs-field)/1.15 "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+      font: 400 var(--fs-field)/1.15 "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
       overflow-wrap: anywhere;
       white-space: pre-wrap;
     }
@@ -430,7 +430,7 @@
       border-collapse: collapse;
       margin: 0 0 16px;
       color: #20242a;
-      font: 500 var(--fs-table)/1.15 "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+      font: 400 var(--fs-table)/1.15 "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
     }
 
     .results-table td {
@@ -488,10 +488,14 @@
 
     .footer-line.signature {
       justify-content: flex-end;
-      align-items: center;
-      min-height: 96px;
+      align-items: flex-start;
+      min-height: 82px;
       margin-top: 0;
       gap: 8px;
+    }
+
+    .footer-line.signature > .label {
+      margin-top: 27px;
     }
 
     .analysis-value {
@@ -510,9 +514,9 @@
 
     .signature-field {
       position: relative;
-      width: 178px;
-      min-width: 178px;
-      min-height: 118px;
+      width: 158px;
+      min-width: 158px;
+      min-height: 82px;
       display: flex;
       align-items: center;
       justify-content: flex-start;
@@ -521,8 +525,8 @@
 
     .signature-image {
       display: none;
-      max-width: 220px;
-      max-height: 174px;
+      max-width: 182px;
+      max-height: 138px;
       object-fit: contain;
       object-position: left center;
       transform: translate(18px, 34px) rotate(-6deg);
