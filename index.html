@@ -1,0 +1,1336 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Report Field Editor</title>
+  <style id="report-css">
+    :root {
+      --green: #2f9b60;
+      --green-dark: #247948;
+      --ink: #20242a;
+      --muted: #5f6872;
+      --paper: #ffffff;
+      --field: #eef0f1;
+      --field-focus: #fff9db;
+      --line: #4aa06d;
+      --chrome: #25303b;
+      --chrome-soft: #eef3f6;
+      --warn: #b88421;
+      --fs-title: 27pt;
+      --fs-brand: 19.5pt;
+      --fs-contact: 11.25pt;
+      --fs-label: 16.5pt;
+      --fs-field: 16.5pt;
+      --fs-box: 13.5pt;
+      --fs-table: 13.5pt;
+      --fs-analysis: 18pt;
+      --fs-signature: 25.5pt;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #dfe6ea;
+      color: var(--ink);
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 8px;
+      background: var(--chrome-soft);
+      color: var(--chrome);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 0 14px;
+      font: 700 14px/1 "Helvetica Neue", Arial, sans-serif;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      background: #dbe7ed;
+    }
+
+    button.primary {
+      background: var(--green);
+      color: #fff;
+    }
+
+    button.primary:hover {
+      background: var(--green-dark);
+    }
+
+    button.warning {
+      color: #583900;
+      background: #fff1d4;
+    }
+
+    .icon {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .app-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 18px;
+      background: rgba(37, 48, 59, 0.96);
+      color: #fff;
+      box-shadow: 0 2px 14px rgba(20, 28, 35, 0.2);
+    }
+
+    .app-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 16px;
+      min-width: 190px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #66d495;
+      box-shadow: 0 0 0 4px rgba(102, 212, 149, 0.16);
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .workspace {
+      width: 100%;
+      overflow: auto;
+      padding: 24px;
+    }
+
+    .sheet {
+      position: relative;
+      width: 210mm;
+      height: 297mm;
+      margin: 0 auto;
+      padding: 17mm 17mm 10mm;
+      background: var(--paper);
+      color: var(--ink);
+      box-shadow: 0 18px 60px rgba(19, 31, 39, 0.24);
+      overflow: hidden;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .template-label {
+      position: absolute;
+      top: 0;
+      right: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 22px;
+      padding: 0 8px;
+      border: 1px solid rgba(178, 132, 33, 0.38);
+      border-top: 0;
+      border-right: 0;
+      border-radius: 0 0 0 4px;
+      pointer-events: none;
+      color: rgba(120, 81, 12, 0.74);
+      font: 800 8pt/1 "Helvetica Neue", Arial, sans-serif;
+      letter-spacing: 0.6px;
+      text-align: center;
+      z-index: 2;
+    }
+
+    .report-content {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+    }
+
+    .report-header {
+      display: grid;
+      grid-template-columns: 1.05fr 0.8fr 1fr;
+      align-items: end;
+      gap: 18px;
+    }
+
+    .report-title {
+      color: var(--green);
+      font: 300 var(--fs-title)/1.05 "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+      text-transform: uppercase;
+    }
+
+    .lab-lockup {
+      justify-self: center;
+      text-align: center;
+      color: #3b3f44;
+    }
+
+    .logo-image {
+      display: none;
+      max-width: 130px;
+      max-height: 78px;
+      object-fit: contain;
+      margin: 0 auto;
+    }
+
+    .lab-lockup.has-logo .lab-mark,
+    .lab-lockup.has-logo .lab-name {
+      display: none;
+    }
+
+    .lab-lockup.has-logo .logo-image {
+      display: block;
+    }
+
+    .lab-mark {
+      display: block;
+      width: 58px;
+      height: 40px;
+      margin: 0 auto 2px;
+    }
+
+    .lab-mark path,
+    .lab-mark polyline {
+      stroke: var(--green);
+    }
+
+    .lab-name {
+      font: 900 var(--fs-brand)/1.1 "Helvetica Neue", Arial, sans-serif;
+      text-transform: uppercase;
+    }
+
+    .contact {
+      justify-self: end;
+      color: #59616a;
+      font: 500 var(--fs-contact)/1.45 "Helvetica Neue", Arial, sans-serif;
+      text-align: left;
+      min-width: 210px;
+    }
+
+    .contact-line {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      column-gap: 7px;
+      align-items: baseline;
+      white-space: nowrap;
+    }
+
+    .contact-key {
+      text-align: right;
+    }
+
+    .contact-value {
+      min-width: 145px;
+    }
+
+    .rule {
+      height: 3px;
+      margin: 12px 0 14px;
+      background: var(--green);
+    }
+
+    .top-grid {
+      display: grid;
+      grid-template-columns: 1fr 314px;
+      gap: 34px;
+      align-items: start;
+      margin-bottom: 24px;
+    }
+
+    .task-line {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .date-stack {
+      display: grid;
+      gap: 6px;
+      width: 328px;
+    }
+
+    .date-line {
+      display: grid;
+      grid-template-columns: 170px 18px 126px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .date-line .label,
+    .date-line .field,
+    .date-arrow {
+      white-space: nowrap;
+      overflow-wrap: normal;
+      word-break: keep-all;
+    }
+
+    .date-line .label {
+      text-align: left;
+    }
+
+    .date-arrow {
+      color: var(--green);
+      font: 400 var(--fs-label)/1.2 "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+      text-align: center;
+    }
+
+    .details {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 5px 18px;
+      margin-bottom: 24px;
+    }
+
+    .label,
+    .section-label {
+      color: var(--green);
+      font: 400 var(--fs-label)/1.2 "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    }
+
+    .field,
+    .box-field {
+      background: var(--field);
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+      min-height: 32px;
+      padding: 5px 10px;
+      color: #22272d;
+      font: 500 var(--fs-field)/1.15 "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+    }
+
+    .field.small {
+      width: 126px;
+      min-width: 126px;
+      max-width: 126px;
+      min-height: 31px;
+      height: 31px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .box-field {
+      min-height: 54px;
+      display: block;
+      margin: 10px 0 20px;
+      padding: 9px 10px;
+      font-size: var(--fs-box);
+      line-height: 1.35;
+    }
+
+    .field *,
+    .box-field *,
+    .label *,
+    .section-label *,
+    .analysis-value *,
+    .results-table td *,
+    .contact *,
+    .report-title *,
+    .lab-name *,
+    .signature-text * {
+      color: inherit !important;
+      font: inherit !important;
+      letter-spacing: inherit !important;
+      text-transform: inherit !important;
+    }
+
+    .box-field.tall {
+      min-height: 54px;
+    }
+
+    .results-section {
+      position: relative;
+    }
+
+    .results-heading {
+      position: relative;
+      min-height: 66px;
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .qr-slot {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 62px;
+      height: 62px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transform: translateX(-50%);
+      background: #fff;
+    }
+
+    .qr-slot.has-qr {
+      display: flex;
+    }
+
+    .qr-slot svg {
+      width: 62px;
+      height: 62px;
+      display: block;
+      shape-rendering: crispEdges;
+    }
+
+    .sample-photo {
+      position: absolute;
+      left: calc(50% + 44px);
+      top: 2px;
+      width: 58px;
+      height: 58px;
+      display: none;
+      object-fit: cover;
+      border: 1px solid rgba(47, 155, 96, 0.45);
+      background: #fff;
+    }
+
+    .sample-photo.has-photo {
+      display: block;
+    }
+
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 0 16px;
+      color: #20242a;
+      font: 500 var(--fs-table)/1.15 "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    }
+
+    .results-table td {
+      border: 2px solid var(--line);
+      padding: 6px 10px;
+      min-height: 28px;
+      vertical-align: top;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+    .results-table td:first-child {
+      width: 50%;
+    }
+
+    .footer-grid {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: 40px;
+      margin-top: 0;
+    }
+
+    .footer-line {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      min-height: 42px;
+    }
+
+    .analysis-line {
+      display: grid;
+      grid-template-columns: max-content 18px max-content;
+      align-items: baseline;
+      column-gap: 8px;
+      align-self: center;
+      min-height: 42px;
+      transform: translateY(8px);
+    }
+
+    .analysis-line .analysis-value {
+      width: auto;
+      min-height: 0;
+      display: inline-block;
+      background: transparent;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+    .footer-line.signature {
+      justify-content: flex-end;
+      align-items: center;
+      min-height: 96px;
+      margin-top: 0;
+      gap: 8px;
+    }
+
+    .analysis-value {
+      color: #11171d;
+      font: 400 var(--fs-analysis)/1.2 "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    }
+
+    .signature-text {
+      min-width: 110px;
+      min-height: 62px;
+      color: #252b31;
+      font: 400 var(--fs-signature)/0.9 "Snell Roundhand", "Brush Script MT", cursive;
+      transform: rotate(-9deg);
+      text-align: center;
+    }
+
+    .signature-field {
+      position: relative;
+      width: 178px;
+      min-width: 178px;
+      min-height: 118px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      overflow: visible;
+    }
+
+    .signature-image {
+      display: none;
+      max-width: 220px;
+      max-height: 174px;
+      object-fit: contain;
+      object-position: left center;
+      transform: translate(18px, 34px) rotate(-6deg);
+      transform-origin: 36% 58%;
+    }
+
+    .signature-field.has-image .signature-text {
+      display: none;
+    }
+
+    .signature-field.has-image .signature-image {
+      display: block;
+    }
+
+    [contenteditable="true"] {
+      border-radius: 2px;
+      outline: 1px solid transparent;
+      outline-offset: 2px;
+    }
+
+    [contenteditable="true"]:hover {
+      outline-color: rgba(47, 155, 96, 0.35);
+    }
+
+    [contenteditable="true"]:focus {
+      background: var(--field-focus);
+      outline-color: var(--warn);
+    }
+
+    [contenteditable="true"]:empty::before {
+      content: attr(data-placeholder);
+      color: rgba(32, 36, 42, 0.35);
+    }
+
+    @media (max-width: 900px) {
+      .app-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .toolbar-actions {
+        justify-content: flex-start;
+      }
+
+      .workspace {
+        padding: 14px;
+      }
+    }
+
+    @media print {
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      body {
+        background: #fff;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+
+      .app-toolbar {
+        display: none !important;
+      }
+
+      .workspace {
+        padding: 0;
+        overflow: visible;
+      }
+
+      .sheet {
+        width: 210mm;
+        height: 297mm;
+        margin: 0;
+        box-shadow: none;
+        break-after: avoid;
+        page-break-after: avoid;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+
+      .field,
+      .box-field {
+        background: var(--field) !important;
+        box-shadow: inset 0 0 0 1000px var(--field);
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+
+      [contenteditable="true"] {
+        outline: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-toolbar">
+    <div class="app-title"><span class="status-dot"></span><span>Report field editor</span></div>
+    <div class="toolbar-actions" aria-label="Report actions">
+      <button type="button" id="add-row" title="Add result row">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+        Add row
+      </button>
+      <button type="button" id="remove-row" title="Delete selected or last result row">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M6 7l1 14h10l1-14"></path><path d="M9 7V4h6v3"></path></svg>
+        Delete row
+      </button>
+      <button type="button" id="insert-signature" title="Insert authorized signature image">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
+        Signature
+      </button>
+      <button type="button" id="clear-signature" title="Clear inserted signature image">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+        Clear sig
+      </button>
+      <button type="button" id="insert-logo" title="Insert authorized logo image">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"></path><path d="m4 15 4-4 4 4 2-2 6 6"></path><path d="M14 9h.01"></path></svg>
+        Logo
+      </button>
+      <button type="button" id="clear-logo" title="Clear inserted logo image">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+        Clear logo
+      </button>
+      <button type="button" id="create-qr" title="Create QR code from text or URL">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4z"></path><path d="M14 4h6v6h-6z"></path><path d="M4 14h6v6H4z"></path><path d="M14 14h2"></path><path d="M18 14h2v2"></path><path d="M14 18h2v2"></path><path d="M20 20h-2"></path></svg>
+        QR
+      </button>
+      <button type="button" id="clear-qr" title="Clear QR code">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+        Clear QR
+      </button>
+      <button type="button" id="insert-photo" title="Upload sample photo attachment">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"></path><path d="m4 15 4-4 4 4 2-2 6 6"></path><path d="M14 9h.01"></path></svg>
+        Photo
+      </button>
+      <button type="button" id="clear-photo" title="Clear uploaded photo">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+        Clear photo
+      </button>
+      <input class="file-input" type="file" id="signature-file" accept="image/png,image/jpeg,image/webp">
+      <input class="file-input" type="file" id="logo-file" accept="image/png,image/jpeg,image/webp">
+      <input class="file-input" type="file" id="photo-file" accept="image/png,image/jpeg,image/webp">
+      <button type="button" id="download-html" title="Download standalone report">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path></svg>
+        HTML
+      </button>
+      <button type="button" class="primary" id="save-pdf" title="Save as PDF">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"></path><path d="M14 3v5h5"></path><path d="M9 16h6"></path><path d="M9 12h4"></path></svg>
+        PDF
+      </button>
+      <button type="button" id="print-report" title="Print document">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><path d="M6 14h12v7H6z"></path></svg>
+        Print
+      </button>
+      <button type="button" class="warning" id="reset-report" title="Reset sample data">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v6h6"></path></svg>
+        Reset
+      </button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <article class="sheet" id="report">
+      <div class="template-label">TEMPLATE / SAMPLE</div>
+      <div class="report-content">
+        <header class="report-header">
+          <div class="report-title" contenteditable="true" data-field="report-title" data-default="TEST REPORT" spellcheck="false">TEST REPORT</div>
+
+          <div class="lab-lockup" id="logo-field">
+            <svg class="lab-mark" viewBox="0 0 64 44" aria-hidden="true">
+              <polyline points="7,34 15,22 21,29 29,12 36,18 46,6 46,35" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></polyline>
+              <path d="M17 34V21M29 34V12M38 34V17M52 34V6" fill="none" stroke-width="4" stroke-linecap="round"></path>
+            </svg>
+            <div class="lab-name" contenteditable="true" data-field="lab-name" data-default="REPORT LAB" spellcheck="false">REPORT LAB</div>
+            <img class="logo-image" id="logo-image" alt="Inserted logo">
+          </div>
+
+          <div class="contact">
+            <div class="contact-line">
+              <span class="contact-key" contenteditable="true" data-field="email-label" data-default="E-mail:" spellcheck="false">E-mail:</span>
+              <span class="contact-value" contenteditable="true" data-field="email-value" data-default="info@example.com" spellcheck="false">info@example.com</span>
+            </div>
+            <div class="contact-line">
+              <span class="contact-key" contenteditable="true" data-field="web-label" data-default="Web:" spellcheck="false">Web:</span>
+              <span class="contact-value" contenteditable="true" data-field="web-value" data-default="example.com" spellcheck="false">example.com</span>
+            </div>
+          </div>
+        </header>
+
+        <div class="rule"></div>
+
+        <section class="top-grid">
+          <div class="task-line">
+            <div class="label" contenteditable="true" data-field="task-label" data-default="Task Number" spellcheck="false">Task Number</div>
+            <div class="field" contenteditable="true" data-field="task-number" data-default="#110295" spellcheck="false">#110295</div>
+          </div>
+
+          <div class="date-stack">
+            <div class="date-line">
+              <div class="label" contenteditable="true" data-field="ordered-label" data-default="Testing ordered" spellcheck="false">Testing ordered</div>
+              <div class="date-arrow">&gt;</div>
+              <div class="field small" contenteditable="true" data-field="ordered-date" data-default="03 JUN '26" spellcheck="false">03 JUN '26</div>
+            </div>
+            <div class="date-line">
+              <div class="label" contenteditable="true" data-field="received-label" data-default="Sample received" spellcheck="false">Sample received</div>
+              <div class="date-arrow">&gt;</div>
+              <div class="field small" contenteditable="true" data-field="received-date" data-default="07 JUN '26" spellcheck="false">07 JUN '26</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="details">
+          <div class="label" contenteditable="true" data-field="client-label" data-default="Client" spellcheck="false">Client</div>
+          <div class="field" contenteditable="true" data-field="client" data-default="ONYX" spellcheck="false">ONYX</div>
+
+          <div class="label" contenteditable="true" data-field="sample-label" data-default="Sample" spellcheck="false">Sample</div>
+          <div class="field" contenteditable="true" data-field="sample" data-default="GLOW Blend 50mg/10mg/10mg (Transparent Green/Silver)" spellcheck="false">GLOW Blend 50mg/10mg/10mg (Transparent Green/Silver)</div>
+
+          <div class="label" contenteditable="true" data-field="manufacturer-label" data-default="Manufacturer" spellcheck="false">Manufacturer</div>
+          <div class="field" contenteditable="true" data-field="manufacturer" data-default="Alluvi" spellcheck="false">Alluvi</div>
+
+          <div class="label" contenteditable="true" data-field="batch-label" data-default="Batch" spellcheck="false">Batch</div>
+          <div class="field" contenteditable="true" data-field="batch" data-default="GLOW02162026-07" spellcheck="false">GLOW02162026-07</div>
+        </section>
+
+        <section>
+          <div class="section-label" contenteditable="true" data-field="sample-description-label" data-default="Sample description >" spellcheck="false">Sample description &gt;</div>
+          <div class="box-field" contenteditable="true" data-field="sample-description" data-default="See picture or pictures attached." data-placeholder="Sample description" spellcheck="false">See picture or pictures attached.</div>
+        </section>
+
+        <section>
+          <div class="section-label" contenteditable="true" data-field="tests-requested-label" data-default="Tests requested >" spellcheck="false">Tests requested &gt;</div>
+          <div class="box-field" contenteditable="true" data-field="tests-requested" data-default="Assessment of a peptide vial or vials." data-placeholder="Tests requested" spellcheck="false">Assessment of a peptide vial or vials.</div>
+        </section>
+
+        <section class="results-section">
+          <div class="results-heading">
+            <div class="section-label" contenteditable="true" data-field="results-label" data-default="Results >" spellcheck="false">Results &gt;</div>
+            <div class="qr-slot" id="qr-slot" aria-label="QR code"></div>
+            <img class="sample-photo" id="sample-photo" alt="Uploaded sample photo">
+          </div>
+          <table class="results-table" id="results-table" aria-label="Editable results table">
+            <tbody>
+              <tr>
+                <td contenteditable="true" data-result="name" spellcheck="false">Retatrutide</td>
+                <td contenteditable="true" data-result="value" spellcheck="false">10.48 mg</td>
+              </tr>
+              <tr>
+                <td contenteditable="true" data-result="name" spellcheck="false">Purity</td>
+                <td contenteditable="true" data-result="value" spellcheck="false">99.453%</td>
+              </tr>
+              <tr>
+                <td contenteditable="true" data-result="name" spellcheck="false"></td>
+                <td contenteditable="true" data-result="value" spellcheck="false"></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <div class="section-label" contenteditable="true" data-field="comments-label" data-default="Comments >" spellcheck="false">Comments &gt;</div>
+          <div class="box-field tall" contenteditable="true" data-field="comments" data-default="" data-placeholder="" spellcheck="false"></div>
+        </section>
+
+        <footer class="footer-grid">
+          <div class="footer-line analysis-line">
+            <div class="label" contenteditable="true" data-field="analysis-label" data-default="Analysis conducted" spellcheck="false">Analysis conducted</div>
+            <div class="date-arrow">&gt;</div>
+            <div class="analysis-value" contenteditable="true" data-field="analysis-date" data-default="18 JUN 2026" spellcheck="false">18 JUN 2026</div>
+          </div>
+          <div class="footer-line signature">
+            <div class="label" contenteditable="true" data-field="signature-label" data-default="Signature >" spellcheck="false">Signature &gt;</div>
+            <div class="signature-field" id="signature-field">
+              <div class="signature-text" contenteditable="true" data-field="signature" data-default="Signed" data-placeholder="Signed" spellcheck="false">Signed</div>
+              <img class="signature-image" id="signature-image" alt="Inserted signature">
+            </div>
+          </div>
+        </footer>
+      </div>
+    </article>
+  </main>
+
+  <script>
+    (function () {
+      var storageKey = "report-field-editor-v1";
+      var report = document.getElementById("report");
+      var resultsTable = document.getElementById("results-table").querySelector("tbody");
+      var signatureField = document.getElementById("signature-field");
+      var signatureImage = document.getElementById("signature-image");
+      var signatureFile = document.getElementById("signature-file");
+      var logoField = document.getElementById("logo-field");
+      var logoImage = document.getElementById("logo-image");
+      var logoFile = document.getElementById("logo-file");
+      var qrSlot = document.getElementById("qr-slot");
+      var samplePhoto = document.getElementById("sample-photo");
+      var photoFile = document.getElementById("photo-file");
+      var qrText = "";
+      var activeResultRow = null;
+
+      function editableFields() {
+        return Array.prototype.slice.call(report.querySelectorAll("[data-field]"));
+      }
+
+      function resultRows() {
+        return Array.prototype.slice.call(resultsTable.querySelectorAll("tr"));
+      }
+
+      function plainText(node) {
+        var source = node.innerText || node.textContent || "";
+        return source.replace(/\n{3,}/g, "\n\n").trim();
+      }
+
+      function setText(node, value) {
+        node.textContent = value || "";
+      }
+
+      function normalizeEditable(node) {
+        if (!node || !node.matches || !node.matches('[contenteditable="true"]')) return;
+        var text = plainText(node);
+        if (node.innerText !== text) {
+          setText(node, text);
+        }
+      }
+
+      function cleanArrowLabels() {
+        ["ordered-label", "received-label", "analysis-label"].forEach(function (field) {
+          var node = report.querySelector('[data-field="' + field + '"]');
+          if (node) setText(node, plainText(node).replace(/\s*>+\s*$/, ""));
+        });
+      }
+
+      function setSignatureImage(source) {
+        var hasImage = Boolean(source);
+        signatureImage.src = hasImage ? source : "";
+        signatureImage.alt = hasImage ? "Inserted signature" : "";
+        signatureField.classList.toggle("has-image", hasImage);
+      }
+
+      function currentSignatureImage() {
+        return signatureField.classList.contains("has-image") ? signatureImage.src : "";
+      }
+
+      function setLogoImage(source) {
+        var hasImage = Boolean(source);
+        logoImage.src = hasImage ? source : "";
+        logoImage.alt = hasImage ? "Inserted logo" : "";
+        logoField.classList.toggle("has-logo", hasImage);
+      }
+
+      function currentLogoImage() {
+        return logoField.classList.contains("has-logo") ? logoImage.src : "";
+      }
+
+      function setSamplePhoto(source) {
+        var hasPhoto = Boolean(source);
+        samplePhoto.src = hasPhoto ? source : "";
+        samplePhoto.alt = hasPhoto ? "Uploaded sample photo" : "";
+        samplePhoto.classList.toggle("has-photo", hasPhoto);
+      }
+
+      function currentSamplePhoto() {
+        return samplePhoto.classList.contains("has-photo") ? samplePhoto.src : "";
+      }
+
+      function toUtf8Bytes(text) {
+        if (window.TextEncoder) return Array.from(new TextEncoder().encode(text));
+        return unescape(encodeURIComponent(text)).split("").map(function (char) {
+          return char.charCodeAt(0);
+        });
+      }
+
+      function makeQrSvg(text) {
+        var matrix = makeQrMatrix(text);
+        var border = 2;
+        var size = matrix.length;
+        var path = [];
+        for (var y = 0; y < size; y++) {
+          for (var x = 0; x < size; x++) {
+            if (matrix[y][x]) path.push("M" + (x + border) + "," + (y + border) + "h1v1h-1z");
+          }
+        }
+        var viewSize = size + border * 2;
+        return '<svg viewBox="0 0 ' + viewSize + " " + viewSize + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="QR code"><rect width="100%" height="100%" fill="#fff"/><path d="' + path.join("") + '" fill="#000"/></svg>';
+      }
+
+      function makeQrMatrix(text) {
+        var version = 4;
+        var size = version * 4 + 17;
+        var dataCodewords = 80;
+        var eccCodewords = 20;
+        var bytes = toUtf8Bytes(text);
+        if (bytes.length > 78) {
+          throw new Error("QR text is too long. Use 78 characters or fewer.");
+        }
+
+        var dataBits = [];
+        function appendBits(value, length) {
+          for (var i = length - 1; i >= 0; i--) dataBits.push((value >>> i) & 1);
+        }
+
+        appendBits(4, 4);
+        appendBits(bytes.length, 8);
+        bytes.forEach(function (byte) { appendBits(byte, 8); });
+
+        var capacityBits = dataCodewords * 8;
+        for (var term = Math.min(4, capacityBits - dataBits.length); term > 0; term--) dataBits.push(0);
+        while (dataBits.length % 8 !== 0) dataBits.push(0);
+
+        var data = [];
+        for (var bitIndex = 0; bitIndex < dataBits.length; bitIndex += 8) {
+          var codeword = 0;
+          for (var bit = 0; bit < 8; bit++) codeword = (codeword << 1) | dataBits[bitIndex + bit];
+          data.push(codeword);
+        }
+        for (var pad = 0; data.length < dataCodewords; pad++) data.push(pad % 2 === 0 ? 0xEC : 0x11);
+
+        var allCodewords = data.concat(reedSolomon(data, eccCodewords));
+        var modules = Array.from({ length: size }, function () { return Array(size).fill(false); });
+        var reserved = Array.from({ length: size }, function () { return Array(size).fill(false); });
+
+        function setFunction(x, y, black) {
+          if (x < 0 || y < 0 || x >= size || y >= size) return;
+          modules[y][x] = black;
+          reserved[y][x] = true;
+        }
+
+        function drawFinder(x, y) {
+          for (var dy = -1; dy <= 7; dy++) {
+            for (var dx = -1; dx <= 7; dx++) {
+              var xx = x + dx;
+              var yy = y + dy;
+              var inFinder = dx >= 0 && dx <= 6 && dy >= 0 && dy <= 6;
+              var black = inFinder && (dx === 0 || dx === 6 || dy === 0 || dy === 6 || (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4));
+              setFunction(xx, yy, black);
+            }
+          }
+        }
+
+        function drawAlignment(cx, cy) {
+          for (var dy = -2; dy <= 2; dy++) {
+            for (var dx = -2; dx <= 2; dx++) {
+              var ring = Math.max(Math.abs(dx), Math.abs(dy));
+              setFunction(cx + dx, cy + dy, ring === 2 || ring === 0);
+            }
+          }
+        }
+
+        function drawFormatBits(mask) {
+          var dataValue = (1 << 3) | mask;
+          var rem = dataValue;
+          for (var i = 0; i < 10; i++) rem = (rem << 1) ^ (((rem >>> 9) & 1) ? 0x537 : 0);
+          var bits = ((dataValue << 10) | rem) ^ 0x5412;
+          function getBit(i) { return ((bits >>> i) & 1) !== 0; }
+          for (var i = 0; i <= 5; i++) setFunction(8, i, getBit(i));
+          setFunction(8, 7, getBit(6));
+          setFunction(8, 8, getBit(7));
+          setFunction(7, 8, getBit(8));
+          for (var i = 9; i < 15; i++) setFunction(14 - i, 8, getBit(i));
+          for (var i = 0; i < 7; i++) setFunction(8, size - 1 - i, getBit(i));
+          for (var i = 7; i < 15; i++) setFunction(size - 15 + i, 8, getBit(i));
+          setFunction(8, size - 8, true);
+        }
+
+        drawFinder(0, 0);
+        drawFinder(size - 7, 0);
+        drawFinder(0, size - 7);
+        drawAlignment(26, 26);
+        for (var i = 8; i < size - 8; i++) {
+          setFunction(i, 6, i % 2 === 0);
+          setFunction(6, i, i % 2 === 0);
+        }
+        drawFormatBits(0);
+
+        var bits = [];
+        allCodewords.forEach(function (codeword) {
+          for (var i = 7; i >= 0; i--) bits.push(((codeword >>> i) & 1) !== 0);
+        });
+
+        var upwards = true;
+        var bitIndex = 0;
+        for (var right = size - 1; right >= 1; right -= 2) {
+          if (right === 6) right = 5;
+          for (var vert = 0; vert < size; vert++) {
+            var y = upwards ? size - 1 - vert : vert;
+            for (var j = 0; j < 2; j++) {
+              var x = right - j;
+              if (reserved[y][x]) continue;
+              var black = bitIndex < bits.length ? bits[bitIndex++] : false;
+              if ((x + y) % 2 === 0) black = !black;
+              modules[y][x] = black;
+            }
+          }
+          upwards = !upwards;
+        }
+        drawFormatBits(0);
+        return modules;
+      }
+
+      function reedSolomon(data, degree) {
+        var exp = [];
+        var log = [];
+        var x = 1;
+        for (var i = 0; i < 255; i++) {
+          exp[i] = x;
+          log[x] = i;
+          x <<= 1;
+          if (x & 0x100) x ^= 0x11D;
+        }
+        for (var i = 255; i < 512; i++) exp[i] = exp[i - 255];
+        function multiply(a, b) {
+          return a && b ? exp[log[a] + log[b]] : 0;
+        }
+        var generator = [1];
+        for (var i = 0; i < degree; i++) {
+          var next = Array(generator.length + 1).fill(0);
+          for (var j = 0; j < generator.length; j++) {
+            next[j] ^= generator[j];
+            next[j + 1] ^= multiply(generator[j], exp[i]);
+          }
+          generator = next;
+        }
+        var result = Array(degree).fill(0);
+        data.forEach(function (byte) {
+          var factor = byte ^ result.shift();
+          result.push(0);
+          for (var i = 0; i < degree; i++) result[i] ^= multiply(generator[i + 1], factor);
+        });
+        return result;
+      }
+
+      function setQrText(text) {
+        qrText = text || "";
+        qrSlot.classList.toggle("has-qr", Boolean(qrText));
+        qrSlot.innerHTML = qrText ? makeQrSvg(qrText) : "";
+      }
+
+      function stateFromDocument() {
+        var fields = {};
+        editableFields().forEach(function (node) {
+          fields[node.dataset.field] = plainText(node);
+        });
+
+        var results = resultRows().map(function (row) {
+          return {
+            name: plainText(row.querySelector('[data-result="name"]')),
+            value: plainText(row.querySelector('[data-result="value"]'))
+          };
+        });
+
+        return {
+          fields: fields,
+          results: results,
+          signatureImage: currentSignatureImage(),
+          logoImage: currentLogoImage(),
+          qrText: qrText,
+          samplePhoto: currentSamplePhoto()
+        };
+      }
+
+      function saveState() {
+        localStorage.setItem(storageKey, JSON.stringify(stateFromDocument()));
+      }
+
+      function createResultRow(name, value) {
+        var row = document.createElement("tr");
+        var nameCell = document.createElement("td");
+        var valueCell = document.createElement("td");
+
+        nameCell.contentEditable = "true";
+        nameCell.dataset.result = "name";
+        nameCell.spellcheck = false;
+        setText(nameCell, name || "");
+
+        valueCell.contentEditable = "true";
+        valueCell.dataset.result = "value";
+        valueCell.spellcheck = false;
+        setText(valueCell, value || "");
+
+        row.appendChild(nameCell);
+        row.appendChild(valueCell);
+        return row;
+      }
+
+      function setResults(results) {
+        resultsTable.textContent = "";
+        (results.length ? results : [{ name: "", value: "" }]).forEach(function (item) {
+          resultsTable.appendChild(createResultRow(item.name, item.value));
+        });
+      }
+
+      function defaultResults() {
+        return [
+          { name: "Retatrutide", value: "10.48 mg" },
+          { name: "Purity", value: "99.453%" },
+          { name: "", value: "" }
+        ];
+      }
+
+      function isOldDefaultResults(results) {
+        return Array.isArray(results)
+          && results.length === 3
+          && results[0] && results[0].name === "GHK-Cu"
+          && results[1] && results[1].name === "BPC-157"
+          && results[2] && results[2].name === "TB-500 (TB4)";
+      }
+
+      function loadState() {
+        var saved = localStorage.getItem(storageKey);
+        if (!saved) return;
+
+        try {
+          var state = JSON.parse(saved);
+          editableFields().forEach(function (node) {
+            if (state.fields && Object.prototype.hasOwnProperty.call(state.fields, node.dataset.field)) {
+              setText(node, state.fields[node.dataset.field]);
+            }
+          });
+          if (Array.isArray(state.results)) {
+            setResults(isOldDefaultResults(state.results) ? defaultResults() : state.results);
+          }
+          setSignatureImage(state.signatureImage || "");
+          setLogoImage(state.logoImage || "");
+          setQrText(state.qrText || "");
+          setSamplePhoto(state.samplePhoto || "");
+          cleanArrowLabels();
+        } catch (error) {
+          localStorage.removeItem(storageKey);
+        }
+      }
+
+      function resetReport() {
+        editableFields().forEach(function (node) {
+          setText(node, node.dataset.default || "");
+        });
+        setResults(defaultResults());
+        setSignatureImage("");
+        setLogoImage("");
+        setQrText("");
+        setSamplePhoto("");
+        saveState();
+      }
+
+      function readImageFile(file, fileInput, label, onReady) {
+        if (!file) return;
+        if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
+          window.alert("Please choose a PNG, JPG, or WebP " + label + " image.");
+          fileInput.value = "";
+          return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+          window.alert("Please choose a " + label + " image smaller than 2 MB.");
+          fileInput.value = "";
+          return;
+        }
+
+        var reader = new FileReader();
+        reader.onload = function () {
+          onReady(reader.result);
+          saveState();
+          fileInput.value = "";
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function insertSignature(file) {
+        readImageFile(file, signatureFile, "signature", setSignatureImage);
+      }
+
+      function insertLogo(file) {
+        readImageFile(file, logoFile, "logo", setLogoImage);
+      }
+
+      function insertPhoto(file) {
+        readImageFile(file, photoFile, "photo", setSamplePhoto);
+      }
+
+      function createQrCode() {
+        var entered = window.prompt("Enter the text or URL for the QR code", qrText || "");
+        if (entered === null) return;
+        entered = entered.trim();
+        try {
+          setQrText(entered);
+          saveState();
+        } catch (error) {
+          window.alert(error.message);
+        }
+      }
+
+      function addRow() {
+        var row = createResultRow("New item", "Value");
+        resultsTable.appendChild(row);
+        activeResultRow = row;
+        row.querySelector("td").focus();
+        saveState();
+      }
+
+      function removeRow() {
+        var rows = resultRows();
+        if (rows.length <= 1) {
+          rows[0].querySelector('[data-result="name"]').textContent = "";
+          rows[0].querySelector('[data-result="value"]').textContent = "";
+          saveState();
+          return;
+        }
+
+        var row = activeResultRow && resultsTable.contains(activeResultRow)
+          ? activeResultRow
+          : rows[rows.length - 1];
+
+        var nextFocus = row.previousElementSibling || row.nextElementSibling;
+        row.remove();
+        activeResultRow = nextFocus;
+        if (nextFocus) nextFocus.querySelector("td").focus();
+        saveState();
+      }
+
+      function handlePaste(event) {
+        var text = (event.clipboardData || window.clipboardData).getData("text/plain");
+        if (!text) return;
+        event.preventDefault();
+        document.execCommand("insertText", false, text);
+      }
+
+      function snapshotHtml() {
+        var clone = report.cloneNode(true);
+        clone.querySelectorAll("[contenteditable]").forEach(function (node) {
+          node.removeAttribute("contenteditable");
+          node.removeAttribute("spellcheck");
+        });
+
+        var styles = document.getElementById("report-css").textContent;
+        return [
+          "<!doctype html>",
+          '<html lang="en">',
+          "<head>",
+          '<meta charset="utf-8">',
+          '<meta name="viewport" content="width=device-width, initial-scale=1">',
+          "<title>Draft Report</title>",
+          "<style>",
+          styles,
+          ".app-toolbar{display:none!important}.workspace{padding:24px;overflow:auto}.sheet{margin:0 auto}",
+          "</style>",
+          "</head>",
+          "<body>",
+          '<main class="workspace">',
+          clone.outerHTML,
+          "</main>",
+          "</body>",
+          "</html>"
+        ].join("");
+      }
+
+      function downloadHtml() {
+        var blob = new Blob([snapshotHtml()], { type: "text/html" });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement("a");
+        link.href = url;
+        link.download = "draft-report.html";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      report.addEventListener("input", saveState);
+      report.addEventListener("paste", handlePaste);
+      report.addEventListener("blur", function (event) {
+        normalizeEditable(event.target);
+        saveState();
+      }, true);
+      report.addEventListener("focusin", function (event) {
+        var row = event.target.closest && event.target.closest("#results-table tr");
+        if (row) activeResultRow = row;
+      });
+
+      document.getElementById("add-row").addEventListener("click", addRow);
+      document.getElementById("remove-row").addEventListener("click", removeRow);
+      document.getElementById("insert-signature").addEventListener("click", function () { signatureFile.click(); });
+      document.getElementById("clear-signature").addEventListener("click", function () {
+        setSignatureImage("");
+        saveState();
+      });
+      document.getElementById("insert-logo").addEventListener("click", function () { logoFile.click(); });
+      document.getElementById("clear-logo").addEventListener("click", function () {
+        setLogoImage("");
+        saveState();
+      });
+      document.getElementById("create-qr").addEventListener("click", createQrCode);
+      document.getElementById("clear-qr").addEventListener("click", function () {
+        setQrText("");
+        saveState();
+      });
+      document.getElementById("insert-photo").addEventListener("click", function () { photoFile.click(); });
+      document.getElementById("clear-photo").addEventListener("click", function () {
+        setSamplePhoto("");
+        saveState();
+      });
+      signatureFile.addEventListener("change", function () { insertSignature(signatureFile.files[0]); });
+      logoFile.addEventListener("change", function () { insertLogo(logoFile.files[0]); });
+      photoFile.addEventListener("change", function () { insertPhoto(photoFile.files[0]); });
+      document.getElementById("save-pdf").addEventListener("click", function () { window.print(); });
+      document.getElementById("print-report").addEventListener("click", function () { window.print(); });
+      document.getElementById("download-html").addEventListener("click", downloadHtml);
+      document.getElementById("reset-report").addEventListener("click", resetReport);
+
+      loadState();
+      cleanArrowLabels();
+    }());
+  </script>
+</body>
+</html>
