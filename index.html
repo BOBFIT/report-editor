@@ -127,6 +127,39 @@
       gap: 8px;
     }
 
+    .page-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .page-tab {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 34px;
+      padding: 0 11px;
+      border-radius: 6px;
+      color: rgba(255, 255, 255, 0.78);
+      font: 800 13px/1 "Helvetica Neue", Arial, sans-serif;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .page-tab:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .page-tab.active {
+      color: var(--chrome);
+      background: #fff;
+    }
+
     .file-input {
       display: none;
     }
@@ -585,6 +618,10 @@
         justify-content: flex-start;
       }
 
+      .page-switch {
+        flex-wrap: wrap;
+      }
+
       .workspace {
         padding: 14px;
       }
@@ -639,6 +676,16 @@
 <body>
   <header class="app-toolbar">
     <div class="app-title"><span class="status-dot"></span><span>Report field editor</span></div>
+    <nav class="page-switch" aria-label="App pages">
+      <a class="page-tab active" href="index.html" aria-current="page">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h4"></path></svg>
+        Report
+      </a>
+      <a class="page-tab" href="logo-stamp.html">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"></path><path d="m4 15 4-4 4 4 2-2 6 6"></path><path d="M12 3 4 8l8 5 8-5z"></path></svg>
+        Logo stamp
+      </a>
+    </nav>
     <div class="toolbar-actions" aria-label="Report actions">
       <button type="button" id="add-row" title="Add result row">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>

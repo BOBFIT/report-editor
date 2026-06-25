@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Logo Stamp Maker</title>
+  <style>
+    :root {
+      --green: #2f9b60;
+      --ink: #1f2933;
+      --muted: #5f6f7a;
+      --panel: #f4f7f8;
+      --line: #d8e1e5;
+      --paper: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #dfe6ea;
+      color: var(--ink);
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    button,
+    label.file-button {
+      appearance: none;
+      border: 0;
+      border-radius: 8px;
+      background: #eef3f6;
+      color: var(--ink);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 0 14px;
+      font: 700 14px/1 "Helvetica Neue", Arial, sans-serif;
+      white-space: nowrap;
+    }
+
+    button:hover,
+    label.file-button:hover {
+      background: #dce8ee;
+    }
+
+    button.primary {
+      background: var(--green);
+      color: #fff;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .icon {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      background: rgba(31, 41, 51, 0.96);
+      color: #fff;
+      box-shadow: 0 2px 14px rgba(20, 28, 35, 0.2);
+    }
+
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 180px;
+      font-weight: 800;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #66d495;
+      box-shadow: 0 0 0 4px rgba(102, 212, 149, 0.16);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .page-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .page-tab {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 34px;
+      padding: 0 11px;
+      border-radius: 6px;
+      color: rgba(255, 255, 255, 0.78);
+      font: 800 13px/1 "Helvetica Neue", Arial, sans-serif;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .page-tab:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .page-tab.active {
+      color: var(--ink);
+      background: #fff;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(280px, 360px) minmax(420px, 1fr);
+      gap: 18px;
+      padding: 18px;
+    }
+
+    .controls {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      align-self: start;
+    }
+
+    .control-group {
+      display: grid;
+      gap: 8px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .control-group:last-child {
+      border-bottom: 0;
+    }
+
+    .control-title {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: 1fr 64px;
+      gap: 10px;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .control-row output {
+      color: var(--muted);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--green);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0 10px;
+      color: var(--ink);
+      font: 500 14px/1.2 "Helvetica Neue", Arial, sans-serif;
+    }
+
+    .stage-wrap {
+      min-width: 0;
+      overflow: auto;
+      padding: 18px;
+      background: #cfd8dd;
+      border-radius: 8px;
+    }
+
+    .stage {
+      position: relative;
+      width: min(78vh, 100%);
+      max-width: 900px;
+      aspect-ratio: 1 / 1;
+      margin: 0 auto;
+      background: #f4f4f0;
+      overflow: hidden;
+      box-shadow: 0 16px 55px rgba(23, 34, 42, 0.24);
+    }
+
+    .base-photo {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      color: #7b8991;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .large-stamp,
+    .corner-logo {
+      position: absolute;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .large-stamp {
+      left: 50%;
+      top: 50%;
+      width: 91%;
+      transform: translate(-50%, -50%);
+      opacity: 0.22;
+      filter: saturate(1.15);
+    }
+
+    .large-stamp img,
+    .corner-logo img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .large-text {
+      color: var(--green);
+      font: 900 92px/1 "Helvetica Neue", Arial, sans-serif;
+      text-align: center;
+      opacity: 0.45;
+    }
+
+    .corner-logo {
+      right: 4%;
+      top: 2%;
+      width: 15%;
+      opacity: 1;
+    }
+
+    @media (max-width: 900px) {
+      .toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .page-switch {
+        flex-wrap: wrap;
+      }
+
+      .actions {
+        justify-content: flex-start;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .stage {
+        width: min(92vw, 900px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="toolbar">
+    <div class="title"><span class="dot"></span><span>Logo stamp maker</span></div>
+    <nav class="page-switch" aria-label="App pages">
+      <a class="page-tab" href="index.html">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h4"></path></svg>
+        Report
+      </a>
+      <a class="page-tab active" href="logo-stamp.html" aria-current="page">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"></path><path d="m4 15 4-4 4 4 2-2 6 6"></path><path d="M12 3 4 8l8 5 8-5z"></path></svg>
+        Logo stamp
+      </a>
+    </nav>
+    <div class="actions">
+      <label class="file-button" for="photo-upload">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"></path><path d="m4 15 4-4 4 4 2-2 6 6"></path><path d="M14 9h.01"></path></svg>
+        Photo
+      </label>
+      <input id="photo-upload" type="file" accept="image/png,image/jpeg,image/webp">
+
+      <label class="file-button" for="logo-upload">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 8l8 5 8-5z"></path><path d="m4 12 8 5 8-5"></path><path d="m4 16 8 5 8-5"></path></svg>
+        Logo
+      </label>
+      <input id="logo-upload" type="file" accept="image/png,image/jpeg,image/webp">
+
+      <button type="button" class="primary" id="download-png">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path></svg>
+        PNG
+      </button>
+      <button type="button" id="reset-page">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v6h6"></path></svg>
+        Reset
+      </button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <aside class="controls">
+      <section class="control-group">
+        <div class="control-title">Watermark</div>
+        <label class="control-row">Opacity <input id="stamp-opacity" type="range" min="5" max="60" value="22"><output id="stamp-opacity-value">22%</output></label>
+        <label class="control-row">Size <input id="stamp-size" type="range" min="35" max="115" value="91"><output id="stamp-size-value">91%</output></label>
+        <label class="control-row">Horizontal <input id="stamp-x" type="range" min="20" max="80" value="50"><output id="stamp-x-value">50%</output></label>
+        <label class="control-row">Vertical <input id="stamp-y" type="range" min="20" max="80" value="50"><output id="stamp-y-value">50%</output></label>
+      </section>
+
+      <section class="control-group">
+        <div class="control-title">Top logo</div>
+        <label class="control-row">Size <input id="corner-size" type="range" min="8" max="32" value="15"><output id="corner-size-value">15%</output></label>
+        <label class="control-row">Right <input id="corner-right" type="range" min="1" max="18" value="4"><output id="corner-right-value">4%</output></label>
+        <label class="control-row">Top <input id="corner-top" type="range" min="1" max="18" value="2"><output id="corner-top-value">2%</output></label>
+      </section>
+
+      <section class="control-group">
+        <div class="control-title">Fallback text</div>
+        <input id="brand-text" type="text" value="YOUR LOGO" aria-label="Fallback text">
+      </section>
+    </aside>
+
+    <section class="stage-wrap">
+      <div class="stage" id="stage">
+        <div class="placeholder" id="placeholder">Upload a photo, then upload your logo.</div>
+        <img class="base-photo" id="base-photo" alt="">
+        <div class="large-stamp" id="large-stamp"></div>
+        <div class="corner-logo" id="corner-logo"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      var state = {
+        photo: "",
+        logo: "",
+        stampOpacity: 22,
+        stampSize: 91,
+        stampX: 50,
+        stampY: 50,
+        cornerSize: 15,
+        cornerRight: 4,
+        cornerTop: 2,
+        brandText: "YOUR LOGO"
+      };
+
+      var basePhoto = document.getElementById("base-photo");
+      var placeholder = document.getElementById("placeholder");
+      var largeStamp = document.getElementById("large-stamp");
+      var cornerLogo = document.getElementById("corner-logo");
+      var brandText = document.getElementById("brand-text");
+
+      function readImage(file, done) {
+        if (!file) return;
+        if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
+          window.alert("Please choose a PNG, JPG, or WebP image.");
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function () { done(reader.result); };
+        reader.readAsDataURL(file);
+      }
+
+      function logoHtml() {
+        if (state.logo) return '<img src="' + state.logo + '" alt="">';
+        return '<div class="large-text">' + escapeHtml(state.brandText || "YOUR LOGO") + "</div>";
+      }
+
+      function escapeHtml(text) {
+        return text.replace(/[&<>"']/g, function (char) {
+          return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char];
+        });
+      }
+
+      function syncRange(id, key, suffix) {
+        var input = document.getElementById(id);
+        var output = document.getElementById(id + "-value");
+        input.value = state[key];
+        output.textContent = state[key] + suffix;
+        input.addEventListener("input", function () {
+          state[key] = Number(input.value);
+          output.textContent = state[key] + suffix;
+          render();
+        });
+      }
+
+      function render() {
+        basePhoto.src = state.photo;
+        basePhoto.style.display = state.photo ? "block" : "none";
+        placeholder.style.display = state.photo ? "none" : "grid";
+
+        largeStamp.innerHTML = logoHtml();
+        largeStamp.style.opacity = String(state.stampOpacity / 100);
+        largeStamp.style.width = state.stampSize + "%";
+        largeStamp.style.left = state.stampX + "%";
+        largeStamp.style.top = state.stampY + "%";
+
+        cornerLogo.innerHTML = logoHtml();
+        cornerLogo.style.width = state.cornerSize + "%";
+        cornerLogo.style.right = state.cornerRight + "%";
+        cornerLogo.style.top = state.cornerTop + "%";
+        cornerLogo.style.display = state.logo || state.brandText ? "block" : "none";
+      }
+
+      function downloadPng() {
+        var stage = document.getElementById("stage");
+        var size = 1200;
+        var canvas = document.createElement("canvas");
+        var context = canvas.getContext("2d");
+        canvas.width = size;
+        canvas.height = size;
+
+        function drawContainImage(image, x, y, width, height) {
+          var ratio = Math.max(width / image.naturalWidth, height / image.naturalHeight);
+          var drawWidth = image.naturalWidth * ratio;
+          var drawHeight = image.naturalHeight * ratio;
+          context.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
+        }
+
+        function drawLogo(source, x, y, width, opacity, callback) {
+          if (!source) {
+            context.save();
+            context.globalAlpha = opacity;
+            context.fillStyle = "#2f9b60";
+            context.font = "900 " + Math.round(width / 7) + "px Helvetica, Arial, sans-serif";
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+            context.fillText(state.brandText || "YOUR LOGO", x + width / 2, y + width / 8);
+            context.restore();
+            callback();
+            return;
+          }
+          var image = new Image();
+          image.onload = function () {
+            var height = width * image.naturalHeight / image.naturalWidth;
+            context.save();
+            context.globalAlpha = opacity;
+            context.drawImage(image, x, y, width, height);
+            context.restore();
+            callback();
+          };
+          image.src = source;
+        }
+
+        context.fillStyle = "#f4f4f0";
+        context.fillRect(0, 0, size, size);
+
+        var photoImage = new Image();
+        photoImage.onload = function () {
+          drawContainImage(photoImage, 0, 0, size, size);
+          var largeWidth = size * state.stampSize / 100;
+          var largeX = size * state.stampX / 100 - largeWidth / 2;
+          var largeY = size * state.stampY / 100 - largeWidth / 8;
+          drawLogo(state.logo, largeX, largeY, largeWidth, state.stampOpacity / 100, function () {
+            var cornerWidth = size * state.cornerSize / 100;
+            var cornerX = size - size * state.cornerRight / 100 - cornerWidth;
+            var cornerY = size * state.cornerTop / 100;
+            drawLogo(state.logo, cornerX, cornerY, cornerWidth, 1, function () {
+              var link = document.createElement("a");
+              link.href = canvas.toDataURL("image/png");
+              link.download = "logo-stamped-photo.png";
+              link.click();
+            });
+          });
+        };
+        photoImage.onerror = function () {
+          window.alert("Upload a photo before downloading.");
+        };
+        photoImage.src = state.photo || "";
+      }
+
+      syncRange("stamp-opacity", "stampOpacity", "%");
+      syncRange("stamp-size", "stampSize", "%");
+      syncRange("stamp-x", "stampX", "%");
+      syncRange("stamp-y", "stampY", "%");
+      syncRange("corner-size", "cornerSize", "%");
+      syncRange("corner-right", "cornerRight", "%");
+      syncRange("corner-top", "cornerTop", "%");
+
+      brandText.addEventListener("input", function () {
+        state.brandText = brandText.value;
+        render();
+      });
+
+      document.getElementById("photo-upload").addEventListener("change", function (event) {
+        readImage(event.target.files[0], function (source) {
+          state.photo = source;
+          render();
+        });
+      });
+
+      document.getElementById("logo-upload").addEventListener("change", function (event) {
+        readImage(event.target.files[0], function (source) {
+          state.logo = source;
+          render();
+        });
+      });
+
+      document.getElementById("download-png").addEventListener("click", downloadPng);
+      document.getElementById("reset-page").addEventListener("click", function () {
+        state.photo = "";
+        state.logo = "";
+        render();
+      });
+
+      render();
+    }());
+  </script>
+</body>
+</html>
