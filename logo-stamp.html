@@ -327,7 +327,11 @@
       </label>
       <input id="logo-upload" type="file" accept="image/png,image/jpeg,image/webp">
 
-      <button type="button" class="primary" id="download-png">
+      <button type="button" class="primary" id="download-pdf">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"></path><path d="M14 3v5h5"></path><path d="M9 16h6"></path><path d="M9 12h4"></path></svg>
+        PDF
+      </button>
+      <button type="button" id="download-png">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path></svg>
         PNG
       </button>
@@ -444,8 +448,12 @@
         cornerLogo.style.display = state.logo || state.brandText ? "block" : "none";
       }
 
-      function downloadPng() {
-        var stage = document.getElementById("stage");
+      function createStampedCanvas(done) {
+        if (!state.photo) {
+          window.alert("Upload a photo before downloading.");
+          return;
+        }
+
         var size = 1200;
         var canvas = document.createElement("canvas");
         var context = canvas.getContext("2d");
@@ -498,10 +506,7 @@
             var cornerX = size - size * state.cornerRight / 100 - cornerWidth;
             var cornerY = size * state.cornerTop / 100;
             drawLogo(state.logo, cornerX, cornerY, cornerWidth, 1, function () {
-              var link = document.createElement("a");
-              link.href = canvas.toDataURL("image/png");
-              link.download = "logo-stamped-photo.png";
-              link.click();
+              done(canvas);
             });
           });
         };
@@ -509,6 +514,105 @@
           window.alert("Upload a photo before downloading.");
         };
         photoImage.src = state.photo || "";
+      }
+
+      function stampFileStem() {
+        var months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+        var now = new Date();
+        return "JANOSHIK_" + months[now.getMonth()] + now.getFullYear();
+      }
+
+      function triggerDownload(blob, fileName) {
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        link.click();
+        setTimeout(function () {
+          URL.revokeObjectURL(url);
+        }, 1000);
+      }
+
+      function dataUrlToBytes(dataUrl) {
+        var base64 = dataUrl.split(",")[1] || "";
+        var binary = atob(base64);
+        var bytes = new Uint8Array(binary.length);
+        for (var index = 0; index < binary.length; index += 1) {
+          bytes[index] = binary.charCodeAt(index);
+        }
+        return bytes;
+      }
+
+      function pdfString(text) {
+        return String(text).replace(/[\\()]/g, function (char) {
+          return "\\" + char;
+        });
+      }
+
+      function buildImagePdf(jpegDataUrl, title) {
+        var encoder = new TextEncoder();
+        var jpegBytes = dataUrlToBytes(jpegDataUrl);
+        var pageSize = 612;
+        var imageSize = 1200;
+        var content = "q\n" + pageSize + " 0 0 " + pageSize + " 0 0 cm\n/Im0 Do\nQ\n";
+        var chunks = [];
+        var offsets = [];
+        var length = 0;
+
+        function addText(text) {
+          var bytes = encoder.encode(text);
+          chunks.push(bytes);
+          length += bytes.length;
+        }
+
+        function addBytes(bytes) {
+          chunks.push(bytes);
+          length += bytes.length;
+        }
+
+        function addObject(number, body) {
+          offsets[number] = length;
+          addText(number + " 0 obj\n" + body + "\nendobj\n");
+        }
+
+        addText("%PDF-1.4\n");
+        addObject(1, "<< /Type /Catalog /Pages 2 0 R >>");
+        addObject(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+        addObject(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + pageSize + " " + pageSize + "] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>");
+
+        offsets[4] = length;
+        addText("4 0 obj\n<< /Type /XObject /Subtype /Image /Width " + imageSize + " /Height " + imageSize + " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " + jpegBytes.length + " >>\nstream\n");
+        addBytes(jpegBytes);
+        addText("\nendstream\nendobj\n");
+
+        addObject(5, "<< /Length " + encoder.encode(content).length + " >>\nstream\n" + content + "endstream");
+        addObject(6, "<< /Title (" + pdfString(title) + ") /Producer (Logo Stamp Maker) >>");
+
+        var xrefOffset = length;
+        addText("xref\n0 7\n0000000000 65535 f \n");
+        for (var objectNumber = 1; objectNumber <= 6; objectNumber += 1) {
+          addText(String(offsets[objectNumber]).padStart(10, "0") + " 00000 n \n");
+        }
+        addText("trailer\n<< /Size 7 /Root 1 0 R /Info 6 0 R >>\nstartxref\n" + xrefOffset + "\n%%EOF");
+
+        return new Blob(chunks, { type: "application/pdf" });
+      }
+
+      function downloadPng() {
+        createStampedCanvas(function (canvas) {
+          var link = document.createElement("a");
+          link.href = canvas.toDataURL("image/png");
+          link.download = stampFileStem() + ".png";
+          link.click();
+        });
+      }
+
+      function downloadPdf() {
+        createStampedCanvas(function (canvas) {
+          var fileStem = stampFileStem();
+          var pdf = buildImagePdf(canvas.toDataURL("image/jpeg", 0.95), fileStem);
+          triggerDownload(pdf, fileStem + ".pdf");
+        });
       }
 
       syncRange("stamp-opacity", "stampOpacity", "%");
@@ -538,6 +642,7 @@
         });
       });
 
+      document.getElementById("download-pdf").addEventListener("click", downloadPdf);
       document.getElementById("download-png").addEventListener("click", downloadPng);
       document.getElementById("reset-page").addEventListener("click", function () {
         state.photo = "";
